@@ -41,7 +41,11 @@ def check(args: argparse.Namespace) -> int:
                 _ng("--host か --url のどちらかが必要です")
                 return 2
             _ok(f"使う ssh: {find_ssh()}")
-            tunnel = Tunnel(args.host, local_port=args.local_port)
+            tunnel = Tunnel(
+                args.host, local_port=args.local_port, user=args.user,
+                ssh_port=args.ssh_port, identity_file=args.identity_file,
+                ssh_config=args.ssh_config,
+            )
             print(f"  --   {' '.join(tunnel.command())}")
             tunnel.start()
             tunnel.wait_ready(timeout=args.timeout)
@@ -112,6 +116,13 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--url", default=None,
                    help="トンネルを自分で張る場合の URL(例: http://127.0.0.1:18765)")
     c.add_argument("--local-port", type=int, default=DEFAULT_LOCAL_PORT)
+    # ~/.ssh/config の Host 名で済むならそのほうがよいが、
+    # 設定画面から直接指定できる必要もある(仕様書「接続方式」)
+    c.add_argument("--user", default=None, help="接続先の利用者名")
+    c.add_argument("--ssh-port", type=int, default=None, help="サーバの sshd のポート")
+    c.add_argument("--identity-file", type=Path, default=None, help="使う秘密鍵")
+    c.add_argument("--ssh-config", type=Path, default=None,
+                   help="~/.ssh/config の代わりに使う設定ファイル")
     c.add_argument("--token-file", default=None, type=Path,
                    help="トークンの平文を書いたファイル")
     c.add_argument("--timeout", type=float, default=20.0)

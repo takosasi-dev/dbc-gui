@@ -21,6 +21,10 @@
   権限を絞ったファイルから読み、コマンドライン引数では受け取らない。
 - 接続の確認コマンド `python -m svcscope_gui check`。トンネルを張って
   `/version`・`/snapshot`・`/health` が取れるところまでを1段ずつ表示する。
+  接続先は `~/.ssh/config` の Host 名のほか、`--user` / `--ssh-port` /
+  `--identity-file` / `--ssh-config` で直接も指定できる(仕様書「接続方式」の
+  GUI 側の要件。設定画面はこれを呼ぶ)。鍵を指定したときは `IdentitiesOnly=yes`
+  を付けて、agent に入っている別の鍵で試されないようにする。
 
 ### Fixed
 

@@ -68,11 +68,21 @@ class Tunnel:
         local_port: int = DEFAULT_LOCAL_PORT,
         remote_port: int = DEFAULT_REMOTE_PORT,
         ssh: str | None = None,
+        user: str | None = None,
+        ssh_port: int | None = None,
+        identity_file: str | Path | None = None,
+        ssh_config: str | Path | None = None,
     ):
         self.host = host
         self.local_port = local_port
         self.remote_port = remote_port
         self.ssh = ssh or find_ssh()
+        # 接続先は ~/.ssh/config の Host 名だけで済ませるのが本筋だが、
+        # 設定画面から直接指定できる必要もある(仕様書「接続方式」GUI 側の要件)。
+        self.user = user
+        self.ssh_port = ssh_port
+        self.identity_file = Path(identity_file) if identity_file else None
+        self.ssh_config = Path(ssh_config) if ssh_config else None
         self._proc: subprocess.Popen | None = None
 
     @property
@@ -81,11 +91,22 @@ class Tunnel:
 
     def command(self) -> list[str]:
         args = [self.ssh, "-N"]
+        if self.ssh_config:
+            # 指定したときだけ。既定では ~/.ssh/config がそのまま効く
+            args += ["-F", str(self.ssh_config)]
         for opt in SSH_OPTIONS:
             args += ["-o", opt]
+        if self.identity_file:
+            args += ["-i", str(self.identity_file)]
+            # 鍵を指定したら、それだけを使う。agent に入っている別の鍵で
+            # 試されて「鍵が多すぎる」と断られるのを避ける
+            args += ["-o", "IdentitiesOnly=yes"]
+        if self.ssh_port:
+            args += ["-p", str(self.ssh_port)]
         # 左側のアドレスを 127.0.0.1 と明示する。ポート番号だけ書くと
         # 環境によって全インターフェースに出て、同じ LAN から見えてしまう。
-        args += ["-L", f"127.0.0.1:{self.local_port}:127.0.0.1:{self.remote_port}", self.host]
+        args += ["-L", f"127.0.0.1:{self.local_port}:127.0.0.1:{self.remote_port}"]
+        args.append(f"{self.user}@{self.host}" if self.user else self.host)
         return args
 
     def start(self) -> None:
@@ -153,6 +174,21 @@ def demo() -> None:
     assert not any("StrictHostKeyChecking=no" in a for a in cmd), cmd
     assert t.url == "http://127.0.0.1:18765"
     assert not t.is_alive()
+
+    # 設定画面から直接指定する形(ホスト・利用者・ポート・鍵)
+    t2 = Tunnel("10.0.0.2", ssh="ssh", user="ops", ssh_port=2222,
+                identity_file="/k/id_ed25519", ssh_config="/k/cfg")
+    c2 = t2.command()
+    assert c2[-1] == "ops@10.0.0.2", c2
+    assert c2[1:3] == ["-N", "-F"], c2        # -F は他の指定より先
+    assert "-p" in c2 and c2[c2.index("-p") + 1] == "2222", c2
+    # パスは Path を通すので、区切りは OS のものになる
+    assert "-i" in c2 and c2[c2.index("-i") + 1] == str(Path("/k/id_ed25519")), c2
+    assert c2[3] == str(Path("/k/cfg")), c2
+    # 鍵を指定したら、それだけを使う
+    assert "IdentitiesOnly=yes" in c2, c2
+    # 利用者を指定しなければホストだけ(~/.ssh/config の Host 名が使える)
+    assert Tunnel("arch-tunnel", ssh="ssh").command()[-1] == "arch-tunnel"
 
     # 実際に待ち受けを作って、空き/使用中の判定が合うか見る
     with socket.socket() as s:
