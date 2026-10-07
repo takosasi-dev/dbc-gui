@@ -39,7 +39,7 @@ PATH の先頭が WSL 側になっている機械でも、そちらを先に見�
    を入れて起動する。
 2. サーバ側の `gen-token.sh` が表示したトークンの平文を、PC 側の
    `~/.config/svcscope/token`(Windows なら
-   `C:\Users\<自分>\.config\svcscope\token`)に1行で置く。
+   `%USERPROFILE%\.config\svcscope\token`)に1行で置く。
    自分以外が読めないようにする。
 3. `~/.ssh/config` に接続先を書く。手順は
    [agent 側の docs/ssh.md](https://github.com/takosasi-dev/svcscope-agent/blob/main/docs/ssh.md)。

@@ -1,0 +1,73 @@
+name: ci
+
+# 本番は Windows の PC なので windows-latest を主にする。
+# ubuntu も回すのは、SSH の組み立てが OS に依らないことを確かめるため。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+        python: ["3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: 使う ssh を確かめる
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            ls -l "/c/Windows/System32/OpenSSH/ssh.exe" || echo "標準の ssh が無い"
+          fi
+          command -v ssh || echo "PATH に ssh が無い"
+
+      # 今の範囲は標準ライブラリだけで足りる
+      - name: テスト
+        run: python tests/run_all.py
+
+  api-compat:
+    # API 仕様の正本は agent 側にある。こちらが宣言しているメジャー版と
+    # 食い違っていないかを、仕様書そのものに当てて確かめる
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: agent 側の API 仕様を取ってきて照合する
+        run: |
+          curl -sSfL -o /tmp/v1.schema.json \
+            https://raw.githubusercontent.com/takosasi-dev/svcscope-agent/main/docs/api/v1.schema.json
+          python - <<'PY'
+          import json, re, pathlib
+          schema = json.load(open("/tmp/v1.schema.json"))
+          # $id のパスから v<N> を読む
+          m = re.search(r"/v(\d+)\.schema\.json", schema["$id"])
+          remote = int(m.group(1))
+          src = pathlib.Path("svcscope_gui/client.py").read_text(encoding="utf-8")
+          mine = int(re.search(r"^API_VERSION = (\d+)", src, re.M).group(1))
+          print(f"agent 側の仕様 v{remote} / こちらの宣言 v{mine}")
+          assert remote == mine, (
+              "API のメジャー版が食い違っています。"
+              "agent 側の docs/api/ を見て client.py の API_VERSION を直すこと")
+          # 使っているエンドポイントが仕様に在ることも見る
+          defs = schema["$defs"]
+          for name in ("snapshot", "history", "units", "alerts", "health", "version"):
+              assert name in defs, f"仕様に {name} がありません"
+          print("照合 OK")
+          PY
