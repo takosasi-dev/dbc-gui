@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+*.spec
+.venv/
+venv/
+
+# 秘密。リポジトリには入れない
+token
+*.token
+settings.json
+# SSH の設定には接続先のアドレスと利用者名が入る
+ssh_config
+known_hosts
+
+# エディタ・OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
