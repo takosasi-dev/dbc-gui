@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "svcscope-gui"
+name = "dbc-gui"
 version = "0.1.0"
-description = "SvcScope の PC 側。SSH トンネル越しに Linux サーバの状態を見る"
+description = "DBC の PC 側。SSH トンネル越しに Linux サーバの状態を見る"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
@@ -18,11 +18,11 @@ gui = ["PySide6>=6.6", "pyqtgraph>=0.13"]
 dev = ["jsonschema>=4.0"]
 
 [project.scripts]
-svcscope-gui = "svcscope_gui.__main__:main"
+dbc-gui = "dbc_gui.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/takosasi-dev/svcscope-gui"
-Agent = "https://github.com/takosasi-dev/svcscope-agent"
+Homepage = "https://github.com/takosasi-dev/dbc-gui"
+Agent = "https://github.com/takosasi-dev/dbc-agent"
 
 [tool.setuptools]
-packages = ["svcscope_gui"]
+packages = ["dbc_gui"]

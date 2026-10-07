@@ -4,7 +4,7 @@
 
 各モジュールが自分の自己検査(`demo()`)を持っている。ssh を実際に起動する
 検査は入れていない。相手のサーバが必要になり、機械によって結果が変わるため。
-通しの確認は `python -m svcscope_gui check` で手で行う。
+通しの確認は `python -m dbc_gui check` で手で行う。
 """
 
 import subprocess
@@ -16,13 +16,13 @@ sys.path.insert(0, str(ROOT))
 
 # 読み込むと標準出力が UTF-8 になる。Windows の既定のコードページでは
 # 日本語を print した時点で落ちるため
-import svcscope_gui  # noqa: E402,F401
+import dbc_gui  # noqa: E402,F401
 
 CHECKS = [
-    ["-m", "svcscope_gui.tunnel"],
-    ["-m", "svcscope_gui.client"],
+    ["-m", "dbc_gui.tunnel"],
+    ["-m", "dbc_gui.client"],
     # 引数が足りないときに使い方を出して終わること
-    ["-m", "svcscope_gui", "--version"],
+    ["-m", "dbc_gui", "--version"],
 ]
 
 

@@ -1,12 +1,12 @@
-# SvcScope (GUI)
+# DBC (GUI)
 
 Linux サーバの **systemd unit 単位**の負荷と **待たされ率(PSI)** を、
 Windows の PC から見るためのクライアント。PC 側のリポジトリ。
 
 サーバ側(エージェント)は別リポジトリ:
-[svcscope-agent](https://github.com/takosasi-dev/svcscope-agent)。
+[dbc-agent](https://github.com/takosasi-dev/dbc-agent)。
 2つはコードを共有せず、
-[API 仕様](https://github.com/takosasi-dev/svcscope-agent/tree/main/docs/api)
+[API 仕様](https://github.com/takosasi-dev/dbc-agent/tree/main/docs/api)
 だけで結ぶ。
 
 > **この版に画面はまだ無い。** 入っているのは SSH トンネルと API クライアント、
@@ -35,17 +35,17 @@ PATH の先頭が WSL 側になっている機械でも、そちらを先に見�
 
 ## 準備
 
-1. サーバ側で [svcscope-agent](https://github.com/takosasi-dev/svcscope-agent)
+1. サーバ側で [dbc-agent](https://github.com/takosasi-dev/dbc-agent)
    を入れて起動する。
 2. サーバ側の `gen-token.sh` が表示したトークンの平文を、PC 側の
-   `~/.config/svcscope/token`(Windows なら
-   `%USERPROFILE%\.config\svcscope\token`)に1行で置く。
+   `~/.config/dbc/token`(Windows なら
+   `%USERPROFILE%\.config\dbc\token`)に1行で置く。
    自分以外が読めないようにする。
 3. `~/.ssh/config` に接続先を書く。手順は
-   [agent 側の docs/ssh.md](https://github.com/takosasi-dev/svcscope-agent/blob/main/docs/ssh.md)。
+   [agent 側の docs/ssh.md](https://github.com/takosasi-dev/dbc-agent/blob/main/docs/ssh.md)。
 
 トークンをコマンドライン引数で渡す口は作っていない。他の利用者に見えるため。
-環境変数 `SVCSCOPE_TOKEN` か `--token-file` を使う。
+環境変数 `DBC_TOKEN` か `--token-file` を使う。
 
 ## 使う
 
@@ -54,7 +54,7 @@ PATH の先頭が WSL 側になっている機械でも、そちらを先に見�
 トンネルを張って、値が取れるところまでを1段ずつ確かめる。
 
 ```
-python -m svcscope_gui check --host arch-tunnel
+python -m dbc_gui check --host arch-tunnel
 ```
 
 ```
@@ -77,7 +77,7 @@ python -m svcscope_gui check --host arch-tunnel
 
 ```
 ssh -N -L 127.0.0.1:18765:127.0.0.1:8765 arch-tunnel
-python -m svcscope_gui check --url http://127.0.0.1:18765
+python -m dbc_gui check --url http://127.0.0.1:18765
 ```
 
 ### 値を見る
@@ -85,16 +85,16 @@ python -m svcscope_gui check --url http://127.0.0.1:18765
 画面ができるまでは、agent 側の CUI クライアントを使うのが早い。
 
 ```
-python -m svcscope.cli --url http://127.0.0.1:18765 watch
+python -m dbc.cli --url http://127.0.0.1:18765 watch
 ```
 
 ## 構成
 
 | ファイル | 役割 |
 | --- | --- |
-| `svcscope_gui/tunnel.py` | `ssh.exe` を子プロセスで動かしてポートフォワードを張る |
-| `svcscope_gui/client.py` | API クライアント。`/version` で互換性を確認する |
-| `svcscope_gui/__main__.py` | 接続の確認コマンド |
+| `dbc_gui/tunnel.py` | `ssh.exe` を子プロセスで動かしてポートフォワードを張る |
+| `dbc_gui/client.py` | API クライアント。`/version` で互換性を確認する |
+| `dbc_gui/__main__.py` | 接続の確認コマンド |
 
 トンネルには常に `ServerAliveInterval=15` / `ServerAliveCountMax=3` /
 `ExitOnForwardFailure=yes` を付ける。転送に失敗したときに「繋がったふり」を

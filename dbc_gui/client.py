@@ -2,7 +2,7 @@
 
 エージェント側のコードは参照しない。2つのリポジトリは API 仕様だけで結ぶ
 (仕様書「リポジトリ構成」共有コードを持たない)。仕様の正本は
-svcscope-agent の docs/api/。
+dbc-agent の docs/api/。
 """
 
 import json
@@ -16,7 +16,7 @@ API_VERSION = 1
 
 # トークンの平文の置き場。権限は利用者が守る前提。
 # v0.2 で Windows 資格情報マネージャーに移す。
-DEFAULT_TOKEN_FILE = Path.home() / ".config" / "svcscope" / "token"
+DEFAULT_TOKEN_FILE = Path.home() / ".config" / "dbc" / "token"
 TIMEOUT_S = 10.0
 
 
@@ -35,14 +35,14 @@ def load_token(path: Path | None = None) -> str:
     """
     if path is not None:
         return _read(path)
-    env = os.environ.get("SVCSCOPE_TOKEN")
+    env = os.environ.get("DBC_TOKEN")
     if env:
         return env.strip()
     if DEFAULT_TOKEN_FILE.exists():
         return _read(DEFAULT_TOKEN_FILE)
     raise ClientError(
         f"トークンがありません。{DEFAULT_TOKEN_FILE} に1行で置くか、"
-        "環境変数 SVCSCOPE_TOKEN で渡してください"
+        "環境変数 DBC_TOKEN で渡してください"
     )
 
 

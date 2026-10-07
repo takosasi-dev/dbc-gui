@@ -52,14 +52,14 @@ jobs:
       - name: agent 側の API 仕様を取ってきて照合する
         run: |
           curl -sSfL -o /tmp/v1.schema.json \
-            https://raw.githubusercontent.com/takosasi-dev/svcscope-agent/main/docs/api/v1.schema.json
+            https://raw.githubusercontent.com/takosasi-dev/dbc-agent/main/docs/api/v1.schema.json
           python - <<'PY'
           import json, re, pathlib
           schema = json.load(open("/tmp/v1.schema.json"))
           # $id のパスから v<N> を読む
           m = re.search(r"/v(\d+)\.schema\.json", schema["$id"])
           remote = int(m.group(1))
-          src = pathlib.Path("svcscope_gui/client.py").read_text(encoding="utf-8")
+          src = pathlib.Path("dbc_gui/client.py").read_text(encoding="utf-8")
           mine = int(re.search(r"^API_VERSION = (\d+)", src, re.M).group(1))
           print(f"agent 側の仕様 v{remote} / こちらの宣言 v{mine}")
           assert remote == mine, (

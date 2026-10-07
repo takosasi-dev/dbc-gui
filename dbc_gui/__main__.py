@@ -1,7 +1,7 @@
 """接続の確認。
 
-    python -m svcscope_gui check --host arch-tunnel
-    python -m svcscope_gui check --url http://127.0.0.1:18765   # トンネルは自分で張る
+    python -m dbc_gui check --host arch-tunnel
+    python -m dbc_gui check --url http://127.0.0.1:18765   # トンネルは自分で張る
 
 トンネルを張って /version と /snapshot が取れるところまでを、1段ずつ
 確かめて表示する。画面を作る前に「PC からサーバの値が取れている」ことを
@@ -92,7 +92,7 @@ def check(args: argparse.Namespace) -> int:
         return 1
     except (ClientError, TunnelError) as e:
         _ng(str(e))
-        print("\n切り分けの順番は svcscope-agent の docs/ssh.md 「5. つながらないときの順番」を見る",
+        print("\n切り分けの順番は dbc-agent の docs/ssh.md 「5. つながらないときの順番」を見る",
               file=sys.stderr)
         return 1
     except KeyboardInterrupt:
@@ -104,8 +104,8 @@ def check(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
-        prog="svcscope_gui",
-        description="SvcScope の PC 側。今は接続の確認まで。画面は次の段で足す",
+        prog="dbc_gui",
+        description="DBC の PC 側。今は接続の確認まで。画面は次の段で足す",
     )
     p.add_argument("--version", action="version", version=__version__)
     sub = p.add_subparsers(dest="command", required=True)

@@ -8,7 +8,7 @@
 
 ### Added
 
-- SSH トンネル(`svcscope_gui/tunnel.py`)。Windows 標準の `ssh.exe` を
+- SSH トンネル(`dbc_gui/tunnel.py`)。Windows 標準の `ssh.exe` を
   子プロセスで動かす。独自の SSH 実装は持たない。
   - 常に `ServerAliveInterval=15` / `ServerAliveCountMax=3` /
     `ExitOnForwardFailure=yes` を付ける。
@@ -16,15 +16,22 @@
   - `StrictHostKeyChecking=no` は使わない。
   - PATH より先に `C:\Windows\System32\OpenSSH\ssh.exe` を見る(WSL の ssh を拾わない)。
   - 使おうとしたポートが既に埋まっていれば、黙って繋がったふりをせずに止まる。
-- API クライアント(`svcscope_gui/client.py`)。接続時に `/version` で
+- API クライアント(`dbc_gui/client.py`)。接続時に `/version` で
   API のメジャーバージョンを突き合わせる。トークンは環境変数か
   権限を絞ったファイルから読み、コマンドライン引数では受け取らない。
-- 接続の確認コマンド `python -m svcscope_gui check`。トンネルを張って
+- 接続の確認コマンド `python -m dbc_gui check`。トンネルを張って
   `/version`・`/snapshot`・`/health` が取れるところまでを1段ずつ表示する。
   接続先は `~/.ssh/config` の Host 名のほか、`--user` / `--ssh-port` /
   `--identity-file` / `--ssh-config` で直接も指定できる(仕様書「接続方式」の
   GUI 側の要件。設定画面はこれを呼ぶ)。鍵を指定したときは `IdentitiesOnly=yes`
   を付けて、agent に入っている別の鍵で試されないようにする。
+
+### Changed
+
+- プロジェクト名を **DBC** に決め、仮称 SvcScope から改名した。リポジトリ名・
+  Python パッケージ・systemd unit・`/etc` と `/run` と `/opt` のパス・専用ユーザ・
+  環境変数(`DBC_TOKEN` ほか)をすべて揃えた。GitHub は旧名から転送されるが、
+  リンクは新しい名前に貼り替えること。
 
 ### Fixed
 
