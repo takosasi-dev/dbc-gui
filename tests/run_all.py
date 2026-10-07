@@ -21,6 +21,10 @@ import dbc_gui  # noqa: E402,F401
 CHECKS = [
     ["-m", "dbc_gui.tunnel"],
     ["-m", "dbc_gui.client"],
+    ["-m", "dbc_gui.worker"],
+    # 画面は窓を出さずに検査する(QT_QPA_PLATFORM=offscreen を自分で設定する)
+    ["-m", "dbc_gui.charts"],
+    ["-m", "dbc_gui.window"],
     # 引数が足りないときに使い方を出して終わること
     ["-m", "dbc_gui", "--version"],
 ]

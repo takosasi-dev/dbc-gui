@@ -9,8 +9,8 @@ Windows の PC から見るためのクライアント。PC 側のリポジト�
 [API 仕様](https://github.com/takosasi-dev/dbc-agent/tree/main/docs/api)
 だけで結ぶ。
 
-> **この版に画面はまだ無い。** 入っているのは SSH トンネルと API クライアント、
-> および接続の確認コマンドまで。PySide6 + pyqtgraph のダッシュボードは次の段。
+> 開発中。実機での常駐テストは未了。接続設定は今のところ
+> コマンドラインの引数で渡す(設定画面は次の段)。
 
 ## なぜ別リポジトリか
 
@@ -26,7 +26,7 @@ Windows の PC から見るためのクライアント。PC 側のリポジト�
 | --- | --- |
 | OS | Windows 10 / 11。Linux でも動く(ssh と Python があれば) |
 | Python | 3.11 以降 |
-| 依存ライブラリ | 今の範囲では **無し**(標準ライブラリだけ)。画面を足す段で PySide6 と pyqtgraph |
+| 依存ライブラリ | 画面に PySide6 と pyqtgraph(`pip install -e .[gui]`)。`check` だけなら標準ライブラリで足りる |
 | その他 | OpenSSH クライアント(Windows の「オプション機能」で入る) |
 
 使う ssh は Windows 標準の `C:\Windows\System32\OpenSSH\ssh.exe`。
@@ -48,6 +48,31 @@ PATH の先頭が WSL 側になっている機械でも、そちらを先に見�
 環境変数 `DBC_TOKEN` か `--token-file` を使う。
 
 ## 使う
+
+### 画面を出す
+
+```
+python -m dbc_gui gui --host arch-tunnel
+```
+
+左が時間の流れ、右が今の状態の2カラム。異常がタブの裏に隠れないよう、
+1画面に出す。
+
+| | |
+| --- | --- |
+| 左上 | CPU・メモリ・PSI・ネットワークの現在値 |
+| 左 | CPU 使用率と load / メモリと swap / 待たされ率 / ディスク I/O の30分ぶん |
+| 右上 | 異常(journald・SMART・脆弱性・ニュース)。重い順 |
+| 右下 | サービスの一覧。CPU の重い順 |
+| 上端 | 接続のランプ(色だけでなく文字でも出す)、エージェントの版と常駐メモリ |
+
+繋いだらまず `/history` で30分ぶんを取り、続けて `/stream` に繋ぐ。
+切れたら最大60秒まで間隔を広げて張り直し、復帰したら `since` を付けて
+取り直して欠損を埋める。**切れていた区間は線を切って灰色に塗る。**
+繋いでしまうと「ずっと平らだった」と読めてしまうため。
+
+PSI が無効なカーネルでは、グラフの枠を残して「このカーネルでは非対応」と
+中に書く。枠ごと消すと、出ていないことに気づけない。
 
 ### 接続の確認
 
@@ -80,9 +105,9 @@ ssh -N -L 127.0.0.1:18765:127.0.0.1:8765 arch-tunnel
 python -m dbc_gui check --url http://127.0.0.1:18765
 ```
 
-### 値を見る
+### 値を見る (CUI)
 
-画面ができるまでは、agent 側の CUI クライアントを使うのが早い。
+画面を出さずに見るなら、agent 側の CUI クライアントが早い。
 
 ```
 python -m dbc.cli --url http://127.0.0.1:18765 watch
@@ -94,7 +119,10 @@ python -m dbc.cli --url http://127.0.0.1:18765 watch
 | --- | --- |
 | `dbc_gui/tunnel.py` | `ssh.exe` を子プロセスで動かしてポートフォワードを張る |
 | `dbc_gui/client.py` | API クライアント。`/version` で互換性を確認する |
-| `dbc_gui/__main__.py` | 接続の確認コマンド |
+| `dbc_gui/__main__.py` | 入口(`gui` と `check`) |
+| `dbc_gui/window.py` | 画面。値を並べるだけで、通信はしない |
+| `dbc_gui/charts.py` | グラフ。何のメトリクスかは知らない |
+| `dbc_gui/worker.py` | 繋ぎ役。トンネル・再接続・受信をこのスレッドで全部やる |
 
 トンネルには常に `ServerAliveInterval=15` / `ServerAliveCountMax=3` /
 `ExitOnForwardFailure=yes` を付ける。転送に失敗したときに「繋がったふり」を
@@ -112,9 +140,7 @@ python tests/run_all.py
 
 ## これから
 
-- PySide6 + pyqtgraph のダッシュボード(現在値、直近30分の履歴グラフ、
-  unit の一覧、異常のハイライト)
-- 切断時の自動再接続(最大60秒まで間隔を広げる)
+- 接続設定の画面(今はコマンドラインの引数で渡す)
 - トークンを Windows 資格情報マネージャーに移す
 - 署名(minisign)を検証してからの自己更新
 - PyInstaller での実行ファイル化

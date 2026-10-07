@@ -62,6 +62,8 @@ class Client:
     def __init__(self, url: str, token: str):
         self.url = url.rstrip("/")
         self._token = token
+        # 受信中のストリーム。閉じる口を別スレッドに渡すために持つ
+        self._stream_resp = None
 
     def _get(self, path: str):
         req = urllib.request.Request(self.url + path)
@@ -123,10 +125,28 @@ class Client:
     def stream(self):
         """SSE。2秒ごとに現在値が流れてくる。切れたら終わる。"""
         with self._get(f"/api/v{API_VERSION}/stream") as r:
-            for raw in r:
-                line = raw.decode("utf-8", "replace").rstrip("\n")
-                if line.startswith("data: "):
-                    yield json.loads(line[6:])
+            self._stream_resp = r
+            try:
+                for raw in r:
+                    line = raw.decode("utf-8", "replace").rstrip("\n")
+                    if line.startswith("data: "):
+                        yield json.loads(line[6:])
+            finally:
+                self._stream_resp = None
+
+    def abort(self) -> None:
+        """受信中のストリームを閉じる。別スレッドから呼んでよい。
+
+        画面を閉じたときに、次の値が来るまで最大2秒待たされるのを避ける。
+        読んでいる側には例外か反復の終了として伝わる。
+        """
+        r = self._stream_resp
+        if r is None:
+            return
+        try:
+            r.close()
+        except OSError:
+            pass
 
 
 def demo() -> None:

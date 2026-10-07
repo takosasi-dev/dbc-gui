@@ -1,11 +1,11 @@
-"""接続の確認。
+"""入口。
 
-    python -m dbc_gui check --host arch-tunnel
+    python -m dbc_gui gui   --host arch-tunnel     # 画面を出す
+    python -m dbc_gui check --host arch-tunnel     # 繋がるかだけ確かめる
     python -m dbc_gui check --url http://127.0.0.1:18765   # トンネルは自分で張る
 
-トンネルを張って /version と /snapshot が取れるところまでを、1段ずつ
-確かめて表示する。画面を作る前に「PC からサーバの値が取れている」ことを
-ここで確定させるため。
+`check` は繋がらないときの切り分け用に残してある。画面が出ないときに、
+どこで止まっているかが1段ずつ見えるようにするため。
 """
 
 import argparse
@@ -15,6 +15,7 @@ from pathlib import Path
 from . import __version__
 from .client import Client, ClientError, IncompatibleApi, load_token
 from .tunnel import DEFAULT_LOCAL_PORT, Tunnel, TunnelError, find_ssh
+from .worker import Target
 
 
 def _ok(msg: str) -> None:
@@ -102,29 +103,62 @@ def check(args: argparse.Namespace) -> int:
             tunnel.stop()
 
 
+def gui(args: argparse.Namespace) -> int:
+    """画面を出す。"""
+    if not args.host and not args.url:
+        _ng("--host か --url のどちらかが必要です")
+        return 2
+    try:
+        from PySide6.QtWidgets import QApplication
+    except ImportError:
+        _ng("画面には PySide6 と pyqtgraph が要ります: pip install PySide6 pyqtgraph")
+        return 2
+
+    from .window import MainWindow
+
+    app = QApplication(sys.argv[:1])
+    app.setApplicationName("DBC")
+    window = MainWindow(Target(
+        host=args.host, url=args.url, local_port=args.local_port,
+        user=args.user, ssh_port=args.ssh_port,
+        identity_file=args.identity_file, ssh_config=args.ssh_config,
+        token_file=args.token_file,
+    ))
+    window.show()
+    return app.exec()
+
+
+def _add_connection_options(p: argparse.ArgumentParser) -> None:
+    p.add_argument("--host", default=None,
+                   help="~/.ssh/config の Host 名(例: arch-tunnel)")
+    p.add_argument("--url", default=None,
+                   help="トンネルを自分で張る場合の URL(例: http://127.0.0.1:18765)")
+    p.add_argument("--local-port", type=int, default=DEFAULT_LOCAL_PORT)
+    # ~/.ssh/config の Host 名で済むならそのほうがよいが、
+    # 直接指定もできる必要がある(仕様書「接続方式」)
+    p.add_argument("--user", default=None, help="接続先の利用者名")
+    p.add_argument("--ssh-port", type=int, default=None, help="サーバの sshd のポート")
+    p.add_argument("--identity-file", type=Path, default=None, help="使う秘密鍵")
+    p.add_argument("--ssh-config", type=Path, default=None,
+                   help="~/.ssh/config の代わりに使う設定ファイル")
+    p.add_argument("--token-file", default=None, type=Path,
+                   help="トークンの平文を書いたファイル")
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         prog="dbc_gui",
-        description="DBC の PC 側。今は接続の確認まで。画面は次の段で足す",
+        description="DBC の PC 側。SSH トンネル越しに Linux サーバの状態を見る",
     )
     p.add_argument("--version", action="version", version=__version__)
     sub = p.add_subparsers(dest="command", required=True)
 
+    g = sub.add_parser("gui", help="画面を出す")
+    _add_connection_options(g)
+    g.set_defaults(func=gui)
+
     c = sub.add_parser("check", help="トンネルを張って値が取れるか確かめる")
-    c.add_argument("--host", default=None,
-                   help="~/.ssh/config の Host 名(例: arch-tunnel)")
-    c.add_argument("--url", default=None,
-                   help="トンネルを自分で張る場合の URL(例: http://127.0.0.1:18765)")
-    c.add_argument("--local-port", type=int, default=DEFAULT_LOCAL_PORT)
-    # ~/.ssh/config の Host 名で済むならそのほうがよいが、
-    # 設定画面から直接指定できる必要もある(仕様書「接続方式」)
-    c.add_argument("--user", default=None, help="接続先の利用者名")
-    c.add_argument("--ssh-port", type=int, default=None, help="サーバの sshd のポート")
-    c.add_argument("--identity-file", type=Path, default=None, help="使う秘密鍵")
-    c.add_argument("--ssh-config", type=Path, default=None,
-                   help="~/.ssh/config の代わりに使う設定ファイル")
-    c.add_argument("--token-file", default=None, type=Path,
-                   help="トークンの平文を書いたファイル")
+    _add_connection_options(c)
     c.add_argument("--timeout", type=float, default=20.0)
     c.set_defaults(func=check)
 

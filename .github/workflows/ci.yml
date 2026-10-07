@@ -26,6 +26,14 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      # 画面の検査に要る。offscreen で窓を出さずに回す
+      - name: Linux の headless 用のライブラリ
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libegl1 libgl1
+
+      - name: 画面の依存を入れる
+        run: pip install -e .[gui]
+
       - name: 使う ssh を確かめる
         shell: bash
         run: |
