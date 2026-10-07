@@ -22,9 +22,18 @@
 - 接続の確認コマンド `python -m svcscope_gui check`。トンネルを張って
   `/version`・`/snapshot`・`/health` が取れるところまでを1段ずつ表示する。
 
+### Fixed
+
+- Windows のコンソールで日本語を出した時点で `UnicodeEncodeError` で落ちていた。
+  既定のコードページ(日本語環境は cp932、英語環境は cp1252)では日本語が
+  encode できない。パッケージの読み込み時に出力を UTF-8 にし、Windows では
+  コンソールの出力コードページも 65001 に替える(終了時に元へ戻す)。
+  CI を windows-latest で回していて見つかった。
+
 ### 未了
 
 - PySide6 + pyqtgraph のダッシュボード。
 - 切断時の自動再接続。
 - トークンを Windows 資格情報マネージャーへ移す。
 - 署名(minisign)の検証と自己更新、PyInstaller での実行ファイル化。
+
